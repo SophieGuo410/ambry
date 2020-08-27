@@ -18,6 +18,7 @@ import com.github.ambry.commons.TopicListener;
 import com.github.ambry.config.HelixAccountServiceConfig;
 import com.github.ambry.router.Router;
 import com.github.ambry.server.StatsSnapshot;
+import com.github.ambry.utils.Utils;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -98,7 +99,8 @@ public class HelixAccountService extends AbstractAccountService implements Accou
   private final AccountMetadataStore accountMetadataStore;
   private static final Logger logger = LoggerFactory.getLogger(HelixAccountService.class);
   private final AtomicReference<Router> router = new AtomicReference<>();
-
+  private Thread markContainerInactiveOnZkThread;
+  private static final String THREAD_NAME = "markContainerInactiveOnZkThread";
   /**
    * <p>
    *   Constructor. It fetches the remote account data in {@code ZooKeeper} and caches locally during initialization,
@@ -375,10 +377,24 @@ public class HelixAccountService extends AbstractAccountService implements Accou
    */
   public void selectInactiveContainersAndMarkInZK(StatsSnapshot statsSnapshot) {
     Set<Container> inactiveContainerCandidateSet = selectInactiveContainerCandidates(statsSnapshot);
-    try {
-      markContainerInactiveOnZk(inactiveContainerCandidateSet);
-    } catch (InterruptedException e) {
-      logger.error("Mark inactive container in zookeeper is interrupted", e);
+    MarkContainerInactiveOnZkExecutor markContainerInactiveOnZkExecutor = new MarkContainerInactiveOnZkExecutor(inactiveContainerCandidateSet);
+    logger.trace("Mark container INACTIVE on Zk thread started");
+    markContainerInactiveOnZkThread = Utils.newThread(THREAD_NAME, markContainerInactiveOnZkExecutor, true);
+    markContainerInactiveOnZkThread.start();
+  }
+
+  private class MarkContainerInactiveOnZkExecutor implements Runnable {
+    private final Set<Container> inactiveContainerCandidateSet;
+    MarkContainerInactiveOnZkExecutor(Set<Container> inactiveContainerCandidateSet) {
+      this.inactiveContainerCandidateSet = inactiveContainerCandidateSet;
+    }
+    @Override
+    public void run() {
+      try {
+        markContainerInactiveOnZk(inactiveContainerCandidateSet);
+      } catch (InterruptedException e) {
+        logger.error("Mark inactive container in zookeeper is interrupted", e);
+      }
     }
   }
 
