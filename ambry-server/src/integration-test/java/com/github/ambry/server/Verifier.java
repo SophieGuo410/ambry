@@ -261,7 +261,7 @@ class Verifier implements Runnable {
                 payload.blobProperties =
                     new BlobProperties(old.getBlobSize(), old.getServiceId(), old.getOwnerId(), old.getContentType(),
                         old.isEncrypted(), Utils.Infinite_Time, old.getCreationTimeInMs(), old.getAccountId(),
-                        old.getContainerId(), old.isEncrypted(), old.getExternalAssetTag());
+                        old.getContainerId(), old.isEncrypted(), old.getExternalAssetTag(), null, null);
               }
             } catch (Exception e) {
               if (channel1 != null) {
