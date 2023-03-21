@@ -202,6 +202,13 @@ public class NamedBlobPutHandler {
           RetainingAsyncWritableChannel channel =
               new RetainingAsyncWritableChannel(frontendConfig.maxJsonRequestSizeBytes);
           restRequest.readInto(channel, fetchStitchRequestBodyCallback(channel, blobInfo));
+        } else if (RestUtils.isDatasetVersionStitchRequest(restRequest)) {
+          if (RestUtils.isDatasetVersionQueryEnabled(restRequest.getArgs())) {
+            addDatasetVersion(blobInfo.getBlobProperties(), restRequest);
+          }
+          RetainingAsyncWritableChannel channel =
+              new RetainingAsyncWritableChannel(frontendConfig.maxJsonRequestSizeBytes);
+          restRequest.readInto(channel, fetchStitchRequestBodyCallback(channel, blobInfo));
         } else {
           if (RestUtils.isDatasetVersionQueryEnabled(restRequest.getArgs())) {
             addDatasetVersion(blobInfo.getBlobProperties(), restRequest);

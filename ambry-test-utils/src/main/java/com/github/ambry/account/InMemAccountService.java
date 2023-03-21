@@ -219,6 +219,24 @@ public class InMemAccountService implements AccountService {
   }
 
   @Override
+  public synchronized List<DatasetVersionRecord> getAllValidVersion(String accountName, String containerName,
+      String datasetName) {
+    List<DatasetVersionRecord> datasetVersionRecords = new ArrayList<>();
+    Account account = nameToAccountMap.get(accountName);
+    short accountId = account.getId();
+    short containerId = account.getContainerByName(containerName).getId();
+    Map<String, DatasetVersionRecord> datasetToDatasetVersionMap = idToDatasetVersionMap.get(new Pair<>(accountId, containerId));
+    if (datasetToDatasetVersionMap != null) {
+      for (DatasetVersionRecord datasetVersionRecord : datasetToDatasetVersionMap.values()) {
+        if (Utils.compareTimes(datasetVersionRecord.getExpirationTimeMs(), System.currentTimeMillis()) <= 0) {
+          datasetVersionRecords.add(datasetVersionRecord);
+        }
+      }
+    }
+    return datasetVersionRecords;
+  }
+
+  @Override
   public void close() {
     // no op
   }
